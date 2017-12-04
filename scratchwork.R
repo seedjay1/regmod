@@ -23,7 +23,7 @@ points.circle_sample <- NULL
 for (i in 1:numpoints)
 {
   r <- radius 
-  degs <- 360 * (i/numpoints)
+  degs <- 360 * ((i-1)/(numpoints-1)) # to fill in the gap at 0 that would result going from 1:100
   
   theta <- 2*pi*degs/360
   
@@ -72,9 +72,30 @@ for (i in 1:numpoints)
   points.plot.tdisk$y[i] <- points.tdisk[[i]][[2]]
 }
 
-plot(x=points.plot.circle$x, y=points.plot.circle$y, asp=T)
-plot(x=points.plot.disk$x, y=points.plot.disk$y, asp=T)
+# plot unit circle w/sample
+plot(x=points.plot.circle$x, y=points.plot.circle$y, asp=T, type="n")
+lines(x=points.plot.circle$x, y=points.plot.circle$y, asp=TRUE)
+points(x=points.plot.disk$x, y=points.plot.disk$y, asp=T)
+
+# plot T(unit circle w/sample)
+plot(x=points.plot.tcircle$x, y=points.plot.tcircle$y, asp=T, type="n")
+lines(x=points.plot.tcircle$x, y=points.plot.tcircle$y, asp=T)
+points(x=points.plot.tdisk$x, y=points.plot.tdisk$y, asp=T)
 
 
-plot(x=points.plot.tcircle$x, y=points.plot.tcircle$y, asp=T)
-plot(x=points.plot.tdisk$x, y=points.plot.tdisk$y, asp=T)
+#======================
+# ok the above illustrates a linear operator on R^2
+# now lets see if we can
+# 1) visualize the eigenvalues
+# 2) reconstruct the operator from the circle/t(circle)
+# 3) reconstruct the operator from the sample/t(sample) values
+# 4) check out the svd/pca eigenvalues/vectors
+#======================
+
+mydata.orig <- as.data.frame(points.plot.disk)
+mydata.trans <- as.data.frame(points.plot.tdisk)
+
+pca.orig <- prcomp(mydata.orig)
+pca.trans <- prcomp(mydata.trans)
+
+
