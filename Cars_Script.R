@@ -3,6 +3,7 @@
 # Load data
 library(ggplot2)
 library(corrplot)
+library(leaps)
 
 data(mtcars)
 head(mtcars)
@@ -34,19 +35,20 @@ p.mat <- cor.mtest(mtcars)
 
 
 # create factors
-mtcars$cyl <- as.factor(mtcars$cyl)
-mtcars$vs <- as.factor(mtcars$vs)
-mtcars$am <- factor(mtcars$am)
-levels(mtcars$am) <- c("auto", "man")
-#mtcars$trans <- as.factor(ifelse(mtcars$am == "auto", 1, 0)) # auto=1, manual = 0
-mtcars$gear <- factor(mtcars$gear)
-mtcars$carb <- factor(mtcars$carb)
+mtcars_fac <- mtcars
+mtcars_fac$cyl <- as.factor(mtcars_fac$cyl)
+mtcars_fac$vs <- as.factor(mtcars_fac$vs)
+mtcars_fac$am <- factor(mtcars_fac$am)
+levels(mtcars_fac$am) <- c("auto", "man")
+#mtcars_fac$trans <- as.factor(ifelse(mtcars_fac$am == "auto", 1, 0)) # auto=1, manual = 0
+mtcars_fac$gear <- factor(mtcars_fac$gear)
+mtcars_fac$carb <- factor(mtcars_fac$carb)
 
 
 # Basic exploratory data analysis
 
 # Plot MPG vs trans
-g <- ggplot(mtcars, aes(x=am, y=mpg, fill=am)) + 
+g <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) + 
   theme(legend.position="none"
         , panel.background = element_rect(fill='grey')
         , plot.background = element_rect(fill='darkseagreen')
@@ -62,7 +64,7 @@ g <- ggplot(mtcars, aes(x=am, y=mpg, fill=am)) +
 print(g)
 
 # Plot MPG vs (trans x cyls)
-g1 <- ggplot(mtcars, aes(x=am, y=mpg, fill=am)) + 
+g1 <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) + 
   theme(legend.position="none"
         , panel.background = element_rect(fill='grey')
         , plot.background = element_rect(fill='darkseagreen')
@@ -93,4 +95,38 @@ print(g1)
 
 #corrplot(car_corrs, method="number")
 
+# all subsets method of variable selection
+best.subset <- regsubsets(mpg ~ ., mtcars, nvmax=5)
+best.subset.summary <- summary(best.subset)
+best.subset.summary$outmat
 
+# results
+#         cyl disp hp  drat wt  qsec vs  am  gear carb
+#1  ( 1 ) " " " "  " " " "  "*" " "  " " " " " "  " " 
+#2  ( 1 ) "*" " "  " " " "  "*" " "  " " " " " "  " " 
+#3  ( 1 ) " " " "  " " " "  "*" "*"  " " "*" " "  " " 
+#4  ( 1 ) " " " "  "*" " "  "*" "*"  " " "*" " "  " " 
+#5  ( 1 ) " " "*"  "*" " "  "*" "*"  " " "*" " "  " " 
+
+# so tranny is only the 3rd important variable - weight being #1 and cyl/qsec (correlated) being #2
+# so lets explore the smallest model with tranny type
+
+best.subset.by.adjr2 <- which.max(best.subset.summary$adjr2)
+best.subset.by.adjr2
+
+best.subset.by.cp <- which.min(best.subset.summary$cp)
+best.subset.by.cp
+
+best.subset.by.bic <- which.min(best.subset.summary$bic)
+best.subset.by.bic
+
+par(mfrow=c(2,2))
+plot(best.subset$rss, xlab="Number of Variables", ylab="RSS", type="l")
+plot(best.subset.summary$adjr2, xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+points(best.subset.by.adjr2, best.subset.summary$adjr2[best.subset.by.adjr2], col="red", cex =2, pch =20)
+plot(best.subset.summary$cp, xlab="Number of Variables", ylab="CP", type="l")
+points(best.subset.by.cp, best.subset.summary$cp[best.subset.by.cp], col="red", cex =2, pch =20)
+plot(best.subset.summary$bic, xlab="Number of Variables", ylab="BIC", type="l")
+points(best.subset.by.bic, best.subset.summary$bic[best.subset.by.bic], col="red", cex =2, pch =20)
+
+coef(best.subset, 3)
