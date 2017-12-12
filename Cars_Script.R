@@ -96,7 +96,7 @@ print(g1)
 #corrplot(car_corrs, method="number")
 
 # all subsets method of variable selection
-best.subset <- regsubsets(mpg ~ ., mtcars, nvmax=5)
+best.subset <- regsubsets(mpg ~ ., mtcars, nvmax=10)
 best.subset.summary <- summary(best.subset)
 best.subset.summary$outmat
 
