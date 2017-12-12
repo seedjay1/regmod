@@ -33,7 +33,6 @@ cor.mtest <- function(mat, ...) {
 p.mat <- cor.mtest(mtcars)
 
 
-
 # create factors
 mtcars_fac <- mtcars
 mtcars_fac$cyl <- as.factor(mtcars_fac$cyl)
