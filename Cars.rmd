@@ -17,9 +17,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Executive Summary
 
-Here we examine the impact on gas mileage attributable to car transmission type (automatic vs manual). Our data will be R's built-in mtcars, and we will use regression modelling techniques in the analysis.
+This report examines the impact on gas mileage attributable to car transmission type (automatic vs manual), controlling for a variety of other variables. Our data will be R's built-in `mtcars` dataset, and we will use regression modelling techniques in the analysis.
 
-Despite at first glance there appearing to be a large (+20% difference in means) influence of automatic vs manual transmission on gas mileage, taking account of the correlations of other variables lessens this impact significantly. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
+Despite at first glance there appearing to be a large (r render_delayed(percent((round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1) - round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)) / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))) increase in mileage from automatic to manual) influence of automatic vs manual transmission on gas mileage, taking account of the correlations of other variables lessens this impact significantly. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
 
 
 ### Data Loading & Exploatory Analysis
@@ -31,6 +31,7 @@ First we load libaries we'll use, along with the data to be analyzed:
 library(ggplot2)
 library(leaps)
 library(corrplot)
+library(scales)
 
 data(mtcars)
 head(mtcars)
@@ -134,10 +135,16 @@ corrplot(cor(mtcars), method="color", col=col(200),
 )
 ```
 
-To assist in removing variables not needed for a strong model, we use the best-subsets technique, from the LEAPS package.
+With so much correlation, we wish to remove as many variables as possible to avoid model overfit (weak predictive ability) but no more (to avoid bias from underfit). To assist in determining which variables to remove, we use the best-subsets technique from the`leaps` package.
 
+```{r best_subsets}
+# all subsets method of variable selection
+best.subset <- regsubsets(mpg ~ ., mtcars, nvmax=10)
+best.subset.summary <- summary(best.subset)
+best.subset.summary$outmat
+```
 
-
+Because the purpose of this report is to determine the influence of transmission type (variable "am"), we reject the 2 most parsimonious models because they don't include the am variable.
 
 ### Model Diagnostics
 
