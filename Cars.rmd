@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 <center> <h2>Motor Trend Data Analysis:<br/>The Effect Of Transmission Type On Mileage</h2> </center>
@@ -19,13 +19,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This report examines the impact on gas mileage attributable to car transmission type (automatic vs manual), controlling for a variety of other variables. Our data will be R's built-in `mtcars` dataset, and we will use regression modelling techniques in the analysis.
 
-Despite at first glance there appearing to be a large (r render_delayed(percent((round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1) - round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)) / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))) increase in mileage from automatic to manual) influence of automatic vs manual transmission on gas mileage, taking account of the correlations of other variables lessens this impact significantly. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
+Despite at first glance there appearing to a large (+43%) mean increase in mileage when switching from automatic transmission to manual, taking account of the correlations of other variables lessens this impact significantly.
+
+What remains after accounting for the other variables in the dataset is a modest 7% difference in mean gas mileage attributable to transmission type.
 
 
 ### Data Loading & Exploatory Analysis
 
 First we load libaries we'll use, along with the data to be analyzed:
-
 
 ```{r libraries_data}
 library(ggplot2)
