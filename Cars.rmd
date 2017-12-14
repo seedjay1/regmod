@@ -9,6 +9,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+mean_diff <- NA
+if(file.exists('mean_diff.rds')){mean_diff <- readRDS('mean_diff.rds')}
 ```
 
 <center> <h2>Motor Trend Data Analysis:<br/>The Effect Of Transmission Type On Mileage</h2> </center>
@@ -19,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This report examines the impact on gas mileage attributable to car transmission type (automatic vs manual), controlling for a variety of other variables. Our data will be R's built-in `mtcars` dataset, and we will use regression modelling techniques in the analysis.
 
-Despite at first glance there appearing to be a large (r render_delayed(percent((round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1) - round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)) / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))) increase in mileage from automatic to manual) influence of automatic vs manual transmission on gas mileage, taking account of the correlations of other variables lessens this impact significantly. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
+Despite at first glance there appearing to be a large `r mean_diff` increase in mileage from automatic to manual) influence of automatic vs manual transmission on gas mileage, taking account of the correlations of other variables lessens this impact significantly. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
 
 
 ### Data Loading & Exploatory Analysis
@@ -51,11 +53,16 @@ levels(mtcars_fac$am) <- c("auto", "man")
 #mtcars_fac$trans <- as.factor(ifelse(mtcars_fac$am == "auto", 1, 0)) # auto=1, manual = 0
 mtcars_fac$gear <- factor(mtcars_fac$gear)
 mtcars_fac$carb <- factor(mtcars_fac$carb)
+
+# save object for later (2nd pass) use in the summary
+mean_diff <- percent((round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1) - round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)) / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))
+saveRDS(mean_diff, "mean_diff.rds")
+
 ```
 
 Now we take a quick look at our data with violin plots, to get an initial idea of the data and their distributions.
 
-The first plot is mileage vs transmission type, the predictor and outcome we are interested in here. We see a clear difference in their means and in their overall distributions. The mileages for automatics are concentrated near its mean of $\mu_A$ = `r round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)` mpg, while those for manuals are much more even distributed along its range, with a mean of $\mu_M$ = `r round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1)` mpg.
+The first plot is mileage vs transmission type, the predictor and outcome we are interested in here. We see a clear difference in their means and in their overall distributions. The mileages for automatics are concentrated near its mean of $\mu_A$ = `r round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)` mpg, while those for manuals are much more uniformly distributed along the category's range, with a mean of $\mu_M$ = `r round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1)` mpg.
 
 ```{r exploratory_plot1}
 # Basic exploratory data analysis
