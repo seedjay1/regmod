@@ -62,7 +62,7 @@ saveRDS(mean_diff, "mean_diff.rds")
 
 Now we take a quick look at our data with violin plots, to get an initial idea of the data and their distributions.
 
-The first plot is mileage vs transmission type, the predictor and outcome we are interested in here. We see a clear difference in their means and in their overall distributions. The mileages for automatics are concentrated near its mean of $\mu_A$ = `r round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)` mpg, while those for manuals are much more uniformly distributed along the category's range, with a mean of $\mu_M$ = `r round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1)` mpg.
+The first plot is mileage vs transmission type, the predictor and outcome we are interested in here. We see a clear difference in their means and in their overall distributions. The mileages for automatics are concentrated near the group's mean of $\mu_A$ = `r round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)` mpg, while those for manuals are much more uniformly distributed along the category's range, with a mean of $\mu_M$ = `r round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1)` mpg.
 
 ```{r exploratory_plot1}
 # Basic exploratory data analysis
