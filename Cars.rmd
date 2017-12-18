@@ -1,7 +1,7 @@
 ---
 title: "Coursera Regression Modelling Project"
 author: "Christopher Jones"
-date: "December 13, 2017"
+date: "December 18, 2017"
 output:
   html_document:
     code_folding: hide
@@ -10,18 +10,21 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 mean_diff <- NA
+true_mean_diff <- NA
 if(file.exists('mean_diff.rds')){mean_diff <- readRDS('mean_diff.rds')}
+if(file.exists('true_mean_diff.rds')){true_mean_diff <- readRDS('true_mean_diff.rds')}
 ```
 
 <center> <h2>Motor Trend Data Analysis:<br/>The Effect Of Transmission Type On Fuel Economy</h2> </center>
 
 ##{.tabset}
 
+
 ### Executive Summary
 
 This report examines the impact on gas mileage attributable to car transmission type (automatic vs manual), controlling for a variety of other variables. Our data will be R's built-in `mtcars` dataset, and we will use regression modelling techniques in the analysis.
 
-Despite at first glance there appearing to be a large (`r mean_diff`) increase in mileage from automatic to manual, taking account of the correlations among other variables shows this influence to be somewhat less. What remains after accounting for the other variables is a modest 7% difference in gas mileage attributable to transmission type.
+Despite at first glance there appearing to be a large (`r mean_diff`) increase in mileage from automatic to manual, taking account of the correlations among other variables shows this influence to be somewhat less. What remains after accounting for the other variables is a more modest (`r true_mean_diff`) increase going from automatic to manual.
 
 
 ### Data Loading & Exploatory Analysis
@@ -56,7 +59,6 @@ mtcars_fac$carb <- factor(mtcars_fac$carb)
 # save object for later (2nd pass) use in the summary
 mean_diff <- percent((round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1) - round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)) / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))
 saveRDS(mean_diff, "mean_diff.rds")
-
 ```
 
 Now we take a quick look at our data with violin plots, to get an initial idea of the data and their distributions.
@@ -107,7 +109,7 @@ print(g1)
 For all we know, similar apparent changes could take place with any or all of the variables in the data - therefore a more princpled approach is needed. In the next section we'll apply the best-subsets technique to determine the "proper" set of variables to use in our modelling.
 
 
-### Regression Modelling
+### Model Selection
 
 Examination of the correlation plot shows us that a large amount of correlation is present in the available variables:
 
@@ -130,14 +132,18 @@ cor.mtest <- function(mat, ...) {
 p.mat <- cor.mtest(mtcars)
 
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-corrplot(cor(mtcars), method="color", col=col(200),  
-         type="upper", order="hclust", 
-         addCoef.col = "black", # Add coefficient of correlation
-         tl.col="black", tl.srt=45, #Text label color and rotation
-         # Combine with significance
-         #p.mat = p.mat, sig.level = 0.01, insig = "blank", 
-         # hide correlation coefficient on the principal diagonal
-         diag=FALSE 
+corrplot(cor(mtcars)
+         , method="color"
+         , col=col(200)  
+         , type="upper"
+         , order="hclust" 
+         , addCoef.col = "black"
+         , tl.col="black"
+         , tl.srt=45
+         , p.mat = p.mat
+         , sig.level = 0.01
+         , insig = "blank" 
+         , diag=FALSE 
 )
 ```
 
@@ -150,11 +156,43 @@ best.subset.summary <- summary(best.subset)
 best.subset.summary$outmat
 ```
 
-Because the purpose of this report is to determine the influence of transmission type (variable "am"), we reject the 2 most parsimonious models because they don't include the am variable.
+Because the purpose of this report is to determine the influence of transmission type (variable `am`), we reject the 2 most parsimonious models because they don't include the `am` variable.
 
-### Model Diagnostics
+For the remaining model possibilities, we examine some of the key model performance indicators:
 
-this is where we will analyze the model's goodness of fit
+```{r model_kpis}
+best.subset.by.adjr2 <- which.max(best.subset.summary$adjr2)
+best.subset.by.cp <- which.min(best.subset.summary$cp)
+best.subset.by.bic <- which.min(best.subset.summary$bic)
+
+par(mfrow = c(2, 2), oma = c( 0, 0, 2, 0 ))
+plot(best.subset$rss, xlab="Number of Variables", ylab="RSS", type="l")
+plot(best.subset.summary$adjr2, xlab="Number of Variables", ylab="Adjusted RSq", type="l")
+points(best.subset.by.adjr2, best.subset.summary$adjr2[best.subset.by.adjr2], col="red", cex =2, pch =20)
+plot(best.subset.summary$cp, xlab="Number of Variables", ylab="CP", type="l")
+points(best.subset.by.cp, best.subset.summary$cp[best.subset.by.cp], col="red", cex =2, pch =20)
+plot(best.subset.summary$bic, xlab="Number of Variables", ylab="BIC", type="l")
+points(best.subset.by.bic, best.subset.summary$bic[best.subset.by.bic], col="red", cex =2, pch =20)
+title( "Regression Variable Selection KPIs", outer = TRUE )
+```
+
+So we see that while maximum variability explained is attained at the 5 variable model, there isn't much improvement beyond the 3 variable model. Also, desired minimums of CP (precision) and BIC (informativeness) are attained at the 3 variable model. Therefore we select the 3 variable model consisting of predictors `wt`, `qsec`, and `am`.
+
+
+### Regression & Model Diagnostics
+
+```{r best_model}
+fit <- lm(formula = mpg ~ wt + qsec + am + hp, data = mtcars)
+summary(fit)
+
+# save object for later (2nd pass) use in the summary
+true_mean_diff <- percent(fit$coefficients["am"] / round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1))
+saveRDS(true_mean_diff, "true_mean_diff.rds")
+```
+
+Our model appears to explain about 84% of the variability in the data (close to the maximum). According to the model, when weight and quarter second time are held constant, going from automatic to manual transmission changes mileage by about 2.92 mpg.
+
+Now we run some diagnostics to verify the goodness of our selected model.
 
 
 ### Conclusions
