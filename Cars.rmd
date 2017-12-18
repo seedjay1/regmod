@@ -24,16 +24,17 @@ if(file.exists('true_mean_diff.rds')){true_mean_diff <- readRDS('true_mean_diff.
 
 This report examines the impact on gas mileage attributable to car transmission type (automatic vs manual), controlling for a variety of other variables. Our data will be R's built-in `mtcars` dataset, and we will use regression modelling techniques in the analysis.
 
-Despite at first glance there appearing to be a large (`r mean_diff`) increase in mileage from automatic to manual, taking account of the correlations among other variables shows this influence to be somewhat less. What remains after accounting for the other variables is a more modest (`r true_mean_diff`) increase going from automatic to manual.
+Despite at first glance there appearing to be a large (`r mean_diff`) increase in mileage from automatic to manual, taking account of the correlations among other variables shows this influence to be somewhat less. What remains after accounting for the primary variables is a more modest (`r true_mean_diff`) increase going from automatic to manual.
 
 
 ### Data Loading & Exploatory Analysis
 
 First we load libaries we'll use, along with the data to be analyzed:
 
-```{r libraries_data}
+```{r libraries_data, message=FALSE}
 library(ggplot2)
 library(leaps)
+library(RColorBrewer)
 library(corrplot)
 library(scales)
 
@@ -52,7 +53,6 @@ mtcars_fac$cyl <- as.factor(mtcars_fac$cyl)
 mtcars_fac$vs <- as.factor(mtcars_fac$vs)
 mtcars_fac$am <- factor(mtcars_fac$am)
 levels(mtcars_fac$am) <- c("auto", "man")
-#mtcars_fac$trans <- as.factor(ifelse(mtcars_fac$am == "auto", 1, 0)) # auto=1, manual = 0
 mtcars_fac$gear <- factor(mtcars_fac$gear)
 mtcars_fac$carb <- factor(mtcars_fac$carb)
 
@@ -106,7 +106,7 @@ g1 <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) +
 print(g1)
 ```
 
-For all we know, similar apparent changes could take place with any or all of the variables in the data - therefore a more princpled approach is needed. In the next section we'll apply the best-subsets technique to determine the "proper" set of variables to use in our modelling.
+For all we know, similar apparent changes could take place with any or all of the variables in the data - therefore a more princpled approach is needed in order to draw conclusions. In the next section we'll apply the best-subsets technique to determine the "proper" set of variables to use in our modelling.
 
 
 ### Model Selection
@@ -128,10 +128,11 @@ cor.mtest <- function(mat, ...) {
   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
   p.mat
 }
-# matrix of the p-value of the correlation
+# matrix of the p-values of the correlation
 p.mat <- cor.mtest(mtcars)
 
-col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+#col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
+col <- colorRampPalette(brewer.pal(5, 'RdYlGn'))
 corrplot(cor(mtcars)
          , method="color"
          , col=col(200)  
@@ -150,15 +151,15 @@ corrplot(cor(mtcars)
 With so much correlation, we wish to remove as many variables as possible to avoid model overfit (weak predictive ability) but no more (to avoid bias from underfit). To assist in determining which variables to remove, we use the best-subsets technique from the`leaps` package.
 
 ```{r best_subsets}
-# all subsets method of variable selection
+# best-subsets method of variable selection
 best.subset <- regsubsets(mpg ~ ., mtcars, nvmax=10)
 best.subset.summary <- summary(best.subset)
 best.subset.summary$outmat
 ```
 
-Because the purpose of this report is to determine the influence of transmission type (variable `am`), we reject the 2 most parsimonious models because they don't include the `am` variable.
+Because the purpose of this report is to determine the influence of transmission type (variable `am`), we reject the 2 most parsimonious models as they don't include the `am` variable.
 
-For the remaining model possibilities, we examine some of the key model performance indicators:
+To decide among the remaining model possibilities, we examine some of the key model performance indicators:
 
 ```{r model_kpis}
 best.subset.by.adjr2 <- which.max(best.subset.summary$adjr2)
@@ -179,10 +180,12 @@ title( "Regression Variable Selection KPIs", outer = TRUE )
 So we see that while maximum variability explained is attained at the 5 variable model, there isn't much improvement beyond the 3 variable model. Also, desired minimums of CP (precision) and BIC (informativeness) are attained at the 3 variable model. Therefore we select the 3 variable model consisting of predictors `wt`, `qsec`, and `am`.
 
 
-### Regression & Model Diagnostics
+### Linear Regression & Diagnostics
+
+Running the 3-variable model selected in the previous section, `mpg` ~ `wt` + `qsec` + `am`, gives us:
 
 ```{r best_model}
-fit <- lm(formula = mpg ~ wt + qsec + am + hp, data = mtcars)
+fit <- lm(formula = mpg ~ wt + qsec + am, data = mtcars)
 summary(fit)
 
 # save object for later (2nd pass) use in the summary
@@ -190,13 +193,23 @@ true_mean_diff <- percent(fit$coefficients["am"] / round(mean(mtcars[mtcars$am =
 saveRDS(true_mean_diff, "true_mean_diff.rds")
 ```
 
-Our model appears to explain about 84% of the variability in the data (close to the maximum). According to the model, when weight and quarter second time are held constant, going from automatic to manual transmission changes mileage by about 2.92 mpg.
+Our model appears to explain about 83% of the variability in the data (close to the maximum). According to the model, when weight and quarter second time are held constant, going from automatic to manual transmission changes mileage by about 2.92 mpg.
 
 Now we run some diagnostics to verify the goodness of our selected model.
+
+```{r residual_plots}
+par(mfrow = c(2, 2), oma = c( 0, 0, 2, 0 ))
+plot(fit)
+```
+
+With this diagnostics plot, we observe the following:
+
+1. On the residuals vs fitted plot, There appears to be no particular pattern to the residuals, nor any obvious outliers.
+2. The residual quantile-quantile plot falls approximately on the x=y line, supporting the condition that errors are normally distributed.
+3. The scale-location plot is similar to the residuals plot - the points appear randomly spread.
+4. There appear to a a couple of candidates for outliers (high leverage and high residual) in the data: the Chrysler Imperial and the Mercedes 230. Further investigation may determine these observations are better off excluded.
 
 
 ### Conclusions
 
-this is where we will quantify our conclusions, but in English
-
-and coefficient interpretation
+We have seen in this report that a good linear model indicates an increase of approximately 2.92 mpg when switching from automatic to manual transmission (holding primary predictors constant). Other candidate models were considered, being rejected either as not being informative/parsimonious, or for not containing the predictor we are focussed on in this report. Robustness of the chosen model was verified via standard residual plots.
