@@ -3,19 +3,23 @@ title: "Coursera Regression Modelling Project"
 author: "Christopher Jones"
 date: "December 18, 2017"
 output:
+  pdf_document: default
   html_document:
     code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 mean_diff <- NA
 true_mean_diff <- NA
 if(file.exists('mean_diff.rds')){mean_diff <- readRDS('mean_diff.rds')}
 if(file.exists('true_mean_diff.rds')){true_mean_diff <- readRDS('true_mean_diff.rds')}
 ```
 
-<center> <h2>Motor Trend Data Analysis:<br/>The Effect Of Transmission Type On Fuel Economy</h2> </center>
+<!-- <center> <h2>Motor Trend Data Analysis:<br/>The Effect Of Transmission Type On Fuel Economy</h2> </center> --> 
+\Large
+\begin{center}Motor Trend Data Analysis:\\The Effect Of Transmission Type On Fuel Economy \end{center}
+\normalsize
 
 ##{.tabset}
 
@@ -65,7 +69,7 @@ Now we take a quick look at our data with violin plots, to get an initial idea o
 
 The first plot is mileage vs transmission type, the predictor and outcome we are interested in here. We see a clear difference in their means and in their overall distributions. The mileages for automatics are concentrated near the group's mean of $\mu_A$ = `r round(mean(mtcars[mtcars$am == 0,]$mpg), digits=1)` mpg, while those for manuals are much more uniformly distributed along the category's range, with a mean of $\mu_M$ = `r round(mean(mtcars[mtcars$am == 1,]$mpg), digits=1)` mpg.
 
-```{r exploratory_plot1}
+```{r exploratory_plot1, message=FALSE}
 # Basic exploratory data analysis
 
 # Plot MPG vs trans
@@ -84,10 +88,10 @@ g <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) +
 
 print(g)
 ```
-
+<!--
 But this 7 mpg difference in means of course fails to split out the influences & correlations among all of the other variables in the dataset. For example, we see a significant change when we break out the number of cylinders:
 
-```{r exploratory_plot2}
+```{r exploratory_plot2, message=FALSE}
 # Plot MPG vs (trans x cyls)
 g1 <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) + 
   theme(legend.position="none"
@@ -105,15 +109,19 @@ g1 <- ggplot(mtcars_fac, aes(x=am, y=mpg, fill=am)) +
 
 print(g1)
 ```
+-->
 
-For all we know, similar apparent changes could take place with any or all of the variables in the data - therefore a more princpled approach is needed in order to draw conclusions. In the next section we'll apply the best-subsets technique to determine the "proper" set of variables to use in our modelling.
 
+<!--For all we know, similar apparent changes could take place with any or all of the variables in the data - therefore a more princpled approach is needed in order to draw conclusions. In the next section we'll apply the best-subsets technique to determine the "proper" set of variables to use in our modelling.
+-->
 
 ### Model Selection
 
-Examination of the correlation plot shows us that a large amount of correlation is present in the available variables:
+We look at the variable correlation plot to begin model selection:
 
 ```{r variable_correlations}
+# handy function for correlograms from
+# http://www.sthda.com/english/wiki/visualize-correlation-matrix-using-correlogram
 cor.mtest <- function(mat, ...) {
   mat <- as.matrix(mat)
   n <- ncol(mat)
@@ -128,10 +136,9 @@ cor.mtest <- function(mat, ...) {
   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
   p.mat
 }
-# matrix of the p-values of the correlation
+# p-values matrix of the correlations
 p.mat <- cor.mtest(mtcars)
 
-#col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
 col <- colorRampPalette(brewer.pal(5, 'RdYlGn'))
 corrplot(cor(mtcars)
          , method="color"
@@ -177,7 +184,7 @@ points(best.subset.by.bic, best.subset.summary$bic[best.subset.by.bic], col="red
 title( "Regression Variable Selection KPIs", outer = TRUE )
 ```
 
-So we see that while maximum variability explained is attained at the 5 variable model, there isn't much improvement beyond the 3 variable model. Also, desired minimums of CP (precision) and BIC (informativeness) are attained at the 3 variable model. Therefore we select the 3 variable model consisting of predictors `wt`, `qsec`, and `am`.
+So we see that while maximum variability explained is attained at the 5-variable model, there isn't much improvement beyond the 3-variable model. Also, desired minimums of CP (precision) and BIC (informativeness) are attained at the 3-variable model. Therefore we select the 3-variable model consisting of predictors `wt`, `qsec`, and `am`.
 
 
 ### Linear Regression & Diagnostics
@@ -204,11 +211,10 @@ plot(fit)
 
 With this diagnostics plot, we observe the following:
 
-1. On the residuals vs fitted plot, There appears to be no particular pattern to the residuals, nor any obvious outliers.
+1. On the residuals vs fitted plot there appears to be no particular pattern to the residuals.
 2. The residual quantile-quantile plot falls approximately on the x=y line, supporting the condition that errors are normally distributed.
 3. The scale-location plot is similar to the residuals plot - the points appear randomly spread.
-4. There appear to a a couple of candidates for outliers (high leverage and high residual) in the data: the Chrysler Imperial and the Mercedes 230. Further investigation may determine these observations are better off excluded.
-
+4. There appear to a a couple of candidates for outliers in the data: the Chrysler Imperial and the Mercedes 230. Further investigation may determine these observations are better off excluded.
 
 ### Conclusions
 
